@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/main.css">
+    <title>Sync</title>
+</head>
+<body>
+    <button id="add-ip" class="button-3">Add my IP</button>
+    <form action="get_list" method="get">
+        <button class="button-3" type="submit">Get IPs</button>
+    </form>
+</body>
+<script>
+    const elem = document.getElementById("add-ip");
+
+    elem.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await add_my_ip();
+    });
+
+    async function add_my_ip() {
+        try {
+            const response = await fetch("http://192.168.1.2:443/sync_files", {
+                method: "POST",
+            });
+            if (response.ok) {
+                console.log("IP added successfully");
+            } else {
+                console.error("Failed to add IP:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error occurred:", error);
+        }
+    }
+</script>
+</html>
