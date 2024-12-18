@@ -1,13 +1,23 @@
 #include "SyncFileReader.h"
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <string>
 
+#if defined(__linux__)
+namespace fs = std::filesystem;
+#elif defined(_WIN32)
+namespace fs = std::filesystem;
+#elif defined(__APPLE__)
 namespace fs = std::__fs::filesystem;
+#endif
 
 std::vector<std::string> read_files(const std::string& directoryPath) {
     std::vector<std::string> filePaths;
 
     for (const auto& entry : fs::recursive_directory_iterator(directoryPath)) {
-        if (entry.is_regular_file()) { // Check if it's a file
+        if (entry.is_regular_file()) {
             filePaths.push_back(entry.path().string());
         }
     }

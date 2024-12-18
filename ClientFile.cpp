@@ -1,4 +1,18 @@
 #include "ClientFile.h"
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <string>
+
+#if defined(__linux__)
+namespace fs = std::filesystem;
+#elif defined(_WIN32)
+namespace fs = std::filesystem;
+#elif defined(__APPLE__)
+namespace fs = std::__fs::filesystem;
+#endif
+
 
 
 Client::Client(const std::string &serverIP, int port) : clientSocket(-1) 
@@ -57,7 +71,6 @@ void Client::sendFile(const std::string &filePath) {
 }
 
 
-
 void Client::sendFiles(const std::string& directoryPath) {
     std::vector<std::string> files = read_files(directoryPath);
 
@@ -70,7 +83,7 @@ void Client::sendFiles(const std::string& directoryPath) {
         std::string fileContent((std::istreambuf_iterator<char>(file)),
                                  std::istreambuf_iterator<char>());
 
-        std::string fileName = std::__fs::filesystem::path(filePath).filename().string();
+        std::string fileName = fs::path(filePath).filename().string();
         if (send(clientSocket, fileName.c_str(), fileName.size(), 0) == -1) {
             std::cerr << "Failed to send file name: " << fileName << std::endl;
             continue;
@@ -87,5 +100,3 @@ void Client::sendFiles(const std::string& directoryPath) {
         std::cout << "File sent successfully: " << filePath << std::endl;
     }
 }
-
-
