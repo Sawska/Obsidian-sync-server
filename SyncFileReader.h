@@ -8,9 +8,9 @@
 #include <filesystem>
 
 #if defined(__linux__)
-#define OB_PATH "/home/user/your_path"
+#define OB_PATH "/home/alexander/Документи/Notes"
 #elif _WIN32
-#define OB_PATH "C:\\your\\windows\\path"
+#define OB_PATH "C:\\Users\\Splay\\Documents\\Obsidian vault"
 #else 
 #define OB_PATH "/Users/alexanderkorzh/Documents/Obsidian Vault"
 #endif
