@@ -9,6 +9,21 @@
 #include <string>
 #include <fstream>
 #include "SyncFileReader.h"
+#include <arpa/inet.h>  
+#include <cstring>      
+#include <stdexcept>    
+#include <iostream>     
+
+
+#if defined(__linux__)
+#define ADDR "192.168.1.7"
+#elif defined(_WIN32)
+#define ADDR "127.0.0.1"  // Default to localhost for Windows
+#elif defined(__APPLE__)
+#define ADDR "192.168.1.2"  // Use the correct address for Mac
+#else
+#define ADDR "192.168.1.7"  // Default to localhost for other OS
+#endif
 
 class ServerFile {
 private:
