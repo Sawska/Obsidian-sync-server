@@ -25,7 +25,14 @@ std::vector<std::string> read_files(const std::string& directoryPath) {
     return filePaths;
 }
 
+void create_directories_from_path(const std::string& filePath) {
+    fs::path path(filePath);
+    fs::create_directories(path.parent_path());
+}
+
 void write_file(const std::string& filePath, const std::string& content) {
+    create_directories_from_path(filePath);
+
     std::ofstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file for writing: " + filePath);

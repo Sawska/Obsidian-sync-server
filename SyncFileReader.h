@@ -20,5 +20,6 @@ std::vector<std::string> read_files(const std::string& directoryPath);
 
 
 void write_file(const std::string& filePath, const std::string& content);
+void create_directories_from_path(const std::string& filePath);
 
 #endif // SYNC_FILE_READER_H

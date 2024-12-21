@@ -4,7 +4,6 @@
 #include <iostream>
 #include <thread>
 
-#define OB_PATH "/path/to/output/directory"
 
 void runSyncServer() {
     try {
@@ -71,8 +70,11 @@ int main() {
                 std::cout << "Enter the port number: ";
                 std::cin >> port;
 
+                std::cin.ignore();
+
                 std::cout << "Enter the directory path to send files: ";
-                std::cin >> directoryPath;
+                std::getline(std::cin, directoryPath);  
+
 
                 try {
                     Client client(serverIP, port);
