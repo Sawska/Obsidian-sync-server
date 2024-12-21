@@ -9,6 +9,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     include_directories("/usr/include/asio")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     include_directories("/opt/homebrew/include")
+    include_directories("/usr/local/include")
 endif()
 
 include_directories("/home/alexander/Документи/Obsidian-sync-server/Crow/include")

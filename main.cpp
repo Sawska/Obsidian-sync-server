@@ -2,7 +2,30 @@
 #include "ClientFile.h"
 #include "ServerFile.h"
 #include <iostream>
-// #include "SyncFileReader.h" 
+#include <thread>
+
+#define OB_PATH "/path/to/output/directory"
+
+void runSyncServer() {
+    try {
+        Server server;
+        std::cout << "Starting the sync server..." << std::endl;
+        server.start_server();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+}
+
+void runFileServer(int port) {
+    try {
+        ServerFile serverFile(port);
+        std::cout << "Starting the server to receive files on port " << port << "..." << std::endl;
+        serverFile.acceptConnection();
+        serverFile.receiveFiles(OB_PATH);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+}
 
 int main() {
     std::cout << "Welcome to the Obsidian Sync program" << std::endl;
@@ -18,7 +41,7 @@ int main() {
         std::cin >> choice;
 
         if (std::cin.fail()) {
-            std::cin.clear(); 
+            std::cin.clear();
             std::cin.ignore(1000, '\n');
             std::cerr << "Invalid input. Please enter a number between 1 and 4." << std::endl;
             continue;
@@ -26,15 +49,15 @@ int main() {
 
         switch (choice) {
             case 1: {
-                Server server;
-                std::cout << "Starting the sync server..." << std::endl;
-                server.start_server();
+                std::thread syncServerThread(runSyncServer);
+                syncServerThread.detach(); 
                 break;
             }
             case 2: {
-                ServerFile serverFile;
-                std::cout << "Starting the server to receive files..." << std::endl;
-                serverFile.receiveFiles(OB_PATH);
+                int port;
+                std::cout << "Enter the port number to start the server: ";
+                std::cin >> port;
+                runFileServer(port);
                 break;
             }
             case 3: {
