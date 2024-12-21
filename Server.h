@@ -8,13 +8,13 @@
 #include <vector>
 
 #if defined(__linux__)
-#define ADDR "127.0.0.1"
+#define ADDR "192.168.1.7"
 #elif defined(_WIN32)
 #define ADDR "127.0.0.1"  // Default to localhost for Windows
 #elif defined(__APPLE__)
 #define ADDR "192.168.1.2"  // Use the correct address for Mac
 #else
-#define ADDR "127.0.0.1"  // Default to localhost for other OS
+#define ADDR "192.168.1.7"  // Default to localhost for other OS
 #endif
 
 class Server {

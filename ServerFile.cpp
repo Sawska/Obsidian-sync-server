@@ -1,29 +1,34 @@
 #include "ServerFile.h"
 
-
-ServerFile::ServerFile(int port) : serverSocket(-1), clientSocket(-1) 
+ServerFile::ServerFile(int port) : serverSocket(-1), clientSocket(-1)
 {
-    serverSocket = socket(AF_INET,SOCK_STREAM,0);
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
-        throw std::runtime_error("Failed to create socket");
+        throw std::runtime_error("Socket creation failed: " + std::string(strerror(errno)));
     }
-
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(serverSocket,(struct sockaddr*)&serverAddress,sizeof(serverAddress)) == -1) {
+    // Проверка корректности адреса
+    if (inet_pton(AF_INET, ADDR, &serverAddress.sin_addr) <= 0) {
         close(serverSocket);
-        throw std::runtime_error("Failed to bind socket");
+        throw std::runtime_error("Invalid address: " ADDR);
     }
 
-    if (listen(serverSocket,5) == -1) {
+    // Привязка сокета
+    if (bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
         close(serverSocket);
-        throw std::runtime_error("Failed to listen on socket");
+        throw std::runtime_error("Binding failed: " + std::string(strerror(errno)));
     }
 
-    std::cout << "Server is listening on port" << port << std::endl;
+    // Прослушивание соединений
+    if (listen(serverSocket, 5) == -1) {
+        close(serverSocket);
+        throw std::runtime_error("Listen failed: " + std::string(strerror(errno)));
+    }
+
+    std::cout << "Server is listening on address " << ADDR << " and port " << port << std::endl;
 }
 
 ServerFile::~ServerFile()
