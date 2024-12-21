@@ -42,15 +42,19 @@ Client::~Client()
     close(clientSocket);
 }
 
-void Client::sendMessage(const std::string &message)
-{
-    if (send(clientSocket,message.c_str(),message.size(),0) == -1) {
-        throw std::runtime_error("Failed to send message");
+void Client::receiveAcknowledgment() {
+    char buffer[1024] = {0};
+    int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (bytesReceived == -1) {
+        throw std::runtime_error("Failed to receive acknowledgment");
     }
-    std::cout << "Message sent:" << message << std::endl;
+    buffer[bytesReceived] = '\0';  
+    std::cout << "Received acknowledgment: " << buffer << std::endl;
 }
 
+
 void Client::sendFile(const std::string &filePath) {
+
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filePath);
@@ -68,7 +72,9 @@ void Client::sendFile(const std::string &filePath) {
     }
     file.close();
     std::cout << "File sent successfully: " << filePath << std::endl;
+    receiveAcknowledgment();
 }
+
 
 
 void Client::sendFiles(const std::string& directoryPath) {

@@ -39,21 +39,31 @@ ServerFile::~ServerFile()
 
 void ServerFile::acceptConnection()
 {
-    clientSocket = accept(serverSocket,nullptr,nullptr);
+    clientSocket = accept(serverSocket, nullptr, nullptr);
     if (clientSocket == -1) {
         throw std::runtime_error("failed to accept connection");
     }
-    std::cout << "Client connected " << std::endl;
+    std::cout << "Client connected" << std::endl;
 }
 
 std::string ServerFile::receiveData()
 {
     char buffer[1024] = {0};
-    size_t bytesReceived = recv(clientSocket,buffer,sizeof(buffer),0);
+    size_t bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
     if (bytesReceived == -1) {
         throw std::runtime_error("Failed to receive data");
     }
-    return std::string(buffer,bytesReceived);
+    return std::string(buffer, bytesReceived);
+}
+
+// Send acknowledgment to the client
+void ServerFile::sendAcknowledgment(const std::string &message)
+{
+    if (send(clientSocket, message.c_str(), message.size(), 0) == -1) {
+        std::cerr << "Failed to send acknowledgment" << std::endl;
+    } else {
+        std::cout << "Sent acknowledgment: " << message << std::endl;
+    }
 }
 
 void ServerFile::closeConnection()
@@ -82,6 +92,9 @@ void ServerFile::receiveFile(const std::string &outputFilePath) {
     }
     file.close();
     std::cout << "File received and saved as: " << outputFilePath << std::endl;
+
+    // Send acknowledgment back to the client
+    sendAcknowledgment("File received successfully: " + outputFilePath);
 }
 
 void ServerFile::receiveFiles(const std::string& outputDirectory) {
@@ -110,5 +123,8 @@ void ServerFile::receiveFiles(const std::string& outputDirectory) {
 
         outFile.close();
         std::cout << "File received and saved as: " << outputDirectory + "/" + fileName << std::endl;
+
+        // Send acknowledgment after each file is received
+        sendAcknowledgment("File " + fileName + " received successfully");
     }
 }

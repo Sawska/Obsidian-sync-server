@@ -39,6 +39,7 @@ public:
     void closeConnection();
     void receiveFile(const std::string &outputFilePath);
     void receiveFiles(const std::string& outputDirectory);
+    void sendAcknowledgment(const std::string &message);
 };
 
 #endif //SERVERFILE_H
