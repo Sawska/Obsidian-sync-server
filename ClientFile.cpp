@@ -86,6 +86,7 @@ void Client::sendFiles(const std::string& directoryPath) {
             std::cerr << "Failed to open file: " << filePath << std::endl;
             continue;
         }
+
         std::string fileContent((std::istreambuf_iterator<char>(file)),
                                  std::istreambuf_iterator<char>());
 
@@ -104,5 +105,7 @@ void Client::sendFiles(const std::string& directoryPath) {
         }
 
         std::cout << "File sent successfully: " << filePath << std::endl;
+
+        receiveAcknowledgment();
     }
 }
