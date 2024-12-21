@@ -23,7 +23,7 @@ public:
     void sendMessage(const std::string& message);
     void sendFile(const std::string &filePath);
     void sendFiles(const std::string& directoryPath);
-    void Client::receiveAcknowledgment();
+    void receiveAcknowledgment();
 };
 
 #endif //CLIENTFILE_H
