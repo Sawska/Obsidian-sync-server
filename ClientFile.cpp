@@ -44,12 +44,15 @@ Client::~Client()
 
 void Client::receiveAcknowledgment() {
     char buffer[1024] = {0};
-    int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-    if (bytesReceived == -1) {
-        throw std::runtime_error("Failed to receive acknowledgment");
-    }
-    buffer[bytesReceived] = '\0';  
+ssize_t bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+if (bytesReceived > 0) {
+    buffer[bytesReceived] = '\0';
     std::cout << "Received acknowledgment: " << buffer << std::endl;
+} else if (bytesReceived == 0) {
+    std::cerr << "Server closed the connection." << std::endl;
+} else {
+    std::cerr << "Error receiving acknowledgment: " << strerror(errno) << std::endl;
+}
 }
 
 
@@ -97,15 +100,27 @@ void Client::sendFiles(const std::string& directoryPath) {
         }
 
         char delimiter = '\0';
-        send(clientSocket, &delimiter, sizeof(delimiter), 0);
+        if (send(clientSocket, &delimiter, sizeof(delimiter), 0) == -1) {
+            std::cerr << "Failed to send delimiter for file: " << fileName << std::endl;
+            continue;
+        }
 
         if (send(clientSocket, fileContent.c_str(), fileContent.size(), 0) == -1) {
             std::cerr << "Failed to send file content: " << fileName << std::endl;
             continue;
         }
 
+        if (send(clientSocket, &delimiter, sizeof(delimiter), 0) == -1) {
+            std::cerr << "Failed to send end of file signal for file: " << fileName << std::endl;
+            continue;
+        }
+
         std::cout << "File sent successfully: " << filePath << std::endl;
 
-        receiveAcknowledgment();
+        try {
+            receiveAcknowledgment();  
+        } catch (const std::exception& e) {
+            std::cerr << "Acknowledgment error for file " << fileName << ": " << e.what() << std::endl;
+        }
     }
 }

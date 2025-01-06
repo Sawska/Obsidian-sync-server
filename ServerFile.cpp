@@ -10,19 +10,14 @@ ServerFile::ServerFile(int port) : serverSocket(-1), clientSocket(-1)
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
 
-    // Проверка корректности адреса
     if (inet_pton(AF_INET, ADDR, &serverAddress.sin_addr) <= 0) {
         close(serverSocket);
         throw std::runtime_error("Invalid address: " ADDR);
     }
-
-    // Привязка сокета
     if (bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
         close(serverSocket);
         throw std::runtime_error("Binding failed: " + std::string(strerror(errno)));
     }
-
-    // Прослушивание соединений
     if (listen(serverSocket, 5) == -1) {
         close(serverSocket);
         throw std::runtime_error("Listen failed: " + std::string(strerror(errno)));
@@ -56,14 +51,15 @@ std::string ServerFile::receiveData()
     return std::string(buffer, bytesReceived);
 }
 
-// Send acknowledgment to the client
+
 void ServerFile::sendAcknowledgment(const std::string &message)
 {
-    if (send(clientSocket, message.c_str(), message.size(), 0) == -1) {
-        std::cerr << "Failed to send acknowledgment" << std::endl;
-    } else {
-        std::cout << "Sent acknowledgment: " << message << std::endl;
-    }
+    ssize_t sentBytes = send(clientSocket, message.c_str(), message.size(), 0);
+if (sentBytes == -1) {
+    std::cerr << "Failed to send acknowledgment" << std::endl;
+} else {
+    std::cout << "Sent acknowledgment: " << message << std::endl;
+}
 }
 
 void ServerFile::closeConnection()
@@ -93,7 +89,6 @@ void ServerFile::receiveFile(const std::string &outputFilePath) {
     file.close();
     std::cout << "File received and saved as: " << outputFilePath << std::endl;
 
-    // Send acknowledgment back to the client
     sendAcknowledgment("File received successfully: " + outputFilePath);
 }
 
@@ -102,13 +97,19 @@ void ServerFile::receiveFiles(const std::string& outputDirectory) {
         char fileNameBuffer[256] = {0};
         ssize_t bytesReceived = recv(clientSocket, fileNameBuffer, sizeof(fileNameBuffer) - 1, 0);
         if (bytesReceived <= 0) {
+            std::cerr << "Error or connection closed while receiving file name" << std::endl;
             break;
         }
 
         std::string fileName(fileNameBuffer);
-        
+        std::cout << "Receiving file: " << fileName << std::endl;
+
         char delimiter;
-        recv(clientSocket, &delimiter, sizeof(delimiter), 0);
+        ssize_t delimiterReceived = recv(clientSocket, &delimiter, sizeof(delimiter), 0);
+        if (delimiterReceived <= 0) {
+            std::cerr << "Error receiving delimiter" << std::endl;
+            break;
+        }
 
         std::ofstream outFile(outputDirectory + "/" + fileName, std::ios::binary);
         if (!outFile.is_open()) {
@@ -117,14 +118,24 @@ void ServerFile::receiveFiles(const std::string& outputDirectory) {
         }
 
         char fileBuffer[1024];
-        while ((bytesReceived = recv(clientSocket, fileBuffer, sizeof(fileBuffer), 0)) > 0) {
+        while (true) {
+            bytesReceived = recv(clientSocket, fileBuffer, sizeof(fileBuffer), 0);
+            if (bytesReceived <= 0) {
+                std::cerr << "Error receiving file data or connection closed" << std::endl;
+                break;
+            }
+
+            if (bytesReceived == 1 && fileBuffer[0] == '\0') {
+                break;
+            }
+
             outFile.write(fileBuffer, bytesReceived);
+            std::cout << "Received " << bytesReceived << " bytes of file data" << std::endl;
         }
 
         outFile.close();
         std::cout << "File received and saved as: " << outputDirectory + "/" + fileName << std::endl;
 
-        // Send acknowledgment after each file is received
         sendAcknowledgment("File " + fileName + " received successfully");
     }
 }
