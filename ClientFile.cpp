@@ -92,6 +92,7 @@ void Client::sendFiles(const std::string& directoryPath) {
 
         std::string fileContent((std::istreambuf_iterator<char>(file)),
                                  std::istreambuf_iterator<char>());
+        uint64_t fileSize = fileContent.size();
 
         std::string fileName = fs::path(filePath).filename().string();
         if (send(clientSocket, fileName.c_str(), fileName.size(), 0) == -1) {
@@ -105,15 +106,18 @@ void Client::sendFiles(const std::string& directoryPath) {
             continue;
         }
 
+        if (send(clientSocket, &fileSize, sizeof(fileSize), 0) == -1) {
+            std::cerr << "Failed to send file size for file: " << fileName << std::endl;
+            continue;
+        }
+
         if (send(clientSocket, fileContent.c_str(), fileContent.size(), 0) == -1) {
             std::cerr << "Failed to send file content: " << fileName << std::endl;
             continue;
         }
 
-        if (send(clientSocket, &delimiter, sizeof(delimiter), 0) == -1) {
-            std::cerr << "Failed to send end of file signal for file: " << fileName << std::endl;
-            continue;
-        }
+        shutdown(clientSocket, SHUT_WR);  
+        close(clientSocket);
 
         std::cout << "File sent successfully: " << filePath << std::endl;
 

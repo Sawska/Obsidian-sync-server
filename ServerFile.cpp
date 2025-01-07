@@ -117,18 +117,28 @@ void ServerFile::receiveFiles(const std::string& outputDirectory) {
             continue;
         }
 
+        uint64_t fileSize = 0;
+        bytesReceived = recv(clientSocket, &fileSize, sizeof(fileSize), 0);
+        if (bytesReceived <= 0) {
+            std::cerr << "Failed to receive file size" << std::endl;
+            break;
+        }
+
+        uint64_t totalBytesReceived = 0;
         char fileBuffer[1024];
-        while (true) {
+
+        while (totalBytesReceived < fileSize) {
             bytesReceived = recv(clientSocket, fileBuffer, sizeof(fileBuffer), 0);
             if (bytesReceived <= 0) {
-                std::cerr << "Error receiving file data or connection closed" << std::endl;
+                if (bytesReceived == 0) {
+                    std::cout << "Client closed connection" << std::endl;
+                } else {
+                    std::cerr << "Error receiving file data or connection closed" << std::endl;
+                }
                 break;
             }
 
-            if (bytesReceived == 1 && fileBuffer[0] == '\0') {
-                break;
-            }
-
+            totalBytesReceived += bytesReceived;
             outFile.write(fileBuffer, bytesReceived);
             std::cout << "Received " << bytesReceived << " bytes of file data" << std::endl;
         }
