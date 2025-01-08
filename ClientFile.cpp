@@ -90,41 +90,53 @@ void Client::sendFiles(const std::string& directoryPath) {
             continue;
         }
 
-        std::string fileContent((std::istreambuf_iterator<char>(file)),
-                                 std::istreambuf_iterator<char>());
+        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         uint64_t fileSize = fileContent.size();
 
-        std::string fileName = fs::path(filePath).filename().string();
-        if (send(clientSocket, fileName.c_str(), fileName.size(), 0) == -1) {
-            std::cerr << "Failed to send file name: " << fileName << std::endl;
+        fs::path fullPath(filePath);
+        fs::path basePath(directoryPath);
+        std::string relativePath = fs::relative(fullPath, basePath).string();
+        uint64_t relativePathSize = relativePath.size();
+
+        if (send(clientSocket, &relativePathSize, sizeof(relativePathSize), 0) == -1) {
+            std::cerr << "Failed to send relative path size for: " << relativePath << std::endl;
             continue;
         }
-
-        char delimiter = '\0';
-        if (send(clientSocket, &delimiter, sizeof(delimiter), 0) == -1) {
-            std::cerr << "Failed to send delimiter for file: " << fileName << std::endl;
+        if (send(clientSocket, relativePath.c_str(), relativePath.size(), 0) == -1) {
+            std::cerr << "Failed to send relative path: " << relativePath << std::endl;
             continue;
         }
-
         if (send(clientSocket, &fileSize, sizeof(fileSize), 0) == -1) {
-            std::cerr << "Failed to send file size for file: " << fileName << std::endl;
+            std::cerr << "Failed to send file size for: " << relativePath << std::endl;
             continue;
         }
-
         if (send(clientSocket, fileContent.c_str(), fileContent.size(), 0) == -1) {
-            std::cerr << "Failed to send file content: " << fileName << std::endl;
+            std::cerr << "Failed to send file content: " << relativePath << std::endl;
             continue;
         }
 
-        shutdown(clientSocket, SHUT_WR);  
-        close(clientSocket);
-
-        std::cout << "File sent successfully: " << filePath << std::endl;
+        std::cout << "File sent successfully: " << filePath << " as " << relativePath << std::endl;
 
         try {
             receiveAcknowledgment();  
         } catch (const std::exception& e) {
-            std::cerr << "Acknowledgment error for file " << fileName << ": " << e.what() << std::endl;
+            std::cerr << "Acknowledgment error for file " << relativePath << ": " << e.what() << std::endl;
         }
     }
+
+    uint64_t terminationSignal = 0;
+    if (send(clientSocket, &terminationSignal, sizeof(terminationSignal), 0) == -1) {
+        std::cerr << "Failed to send end-of-transmission signal" << std::endl;
+    } else {
+        std::cout << "End-of-transmission signal sent" << std::endl;
+    }
+    shutdownConnection();
+}
+
+
+
+void Client::shutdownConnection() {
+    shutdown(clientSocket, SHUT_RDWR);
+    close(clientSocket);
+    std::cout << "Connection shut down gracefully" << std::endl;
 }

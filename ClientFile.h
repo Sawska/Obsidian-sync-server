@@ -23,6 +23,7 @@ public:
     void sendMessage(const std::string& message);
     void sendFile(const std::string &filePath);
     void sendFiles(const std::string& directoryPath);
+    void shutdownConnection();
     void receiveAcknowledgment();
 };
 

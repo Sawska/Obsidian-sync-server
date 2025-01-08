@@ -94,28 +94,25 @@ void ServerFile::receiveFile(const std::string &outputFilePath) {
 
 void ServerFile::receiveFiles(const std::string& outputDirectory) {
     while (true) {
-        char fileNameBuffer[256] = {0};
-        ssize_t bytesReceived = recv(clientSocket, fileNameBuffer, sizeof(fileNameBuffer) - 1, 0);
+        uint64_t relativePathSize = 0;
+        ssize_t bytesReceived = recv(clientSocket, &relativePathSize, sizeof(relativePathSize), 0);
         if (bytesReceived <= 0) {
-            std::cerr << "Error or connection closed while receiving file name" << std::endl;
+            std::cerr << "Error or connection closed while receiving relative path size" << std::endl;
+            break;
+        }
+        if (relativePathSize == 0) {
+            std::cout << "End-of-transmission signal received. Closing connection." << std::endl;
             break;
         }
 
-        std::string fileName(fileNameBuffer);
-        std::cout << "Receiving file: " << fileName << std::endl;
-
-        char delimiter;
-        ssize_t delimiterReceived = recv(clientSocket, &delimiter, sizeof(delimiter), 0);
-        if (delimiterReceived <= 0) {
-            std::cerr << "Error receiving delimiter" << std::endl;
+        std::vector<char> relativePathBuffer(relativePathSize + 1, 0);
+        bytesReceived = recv(clientSocket, relativePathBuffer.data(), relativePathSize, 0);
+        if (bytesReceived <= 0) {
+            std::cerr << "Error or connection closed while receiving relative path" << std::endl;
             break;
         }
-
-        std::ofstream outFile(outputDirectory + "/" + fileName, std::ios::binary);
-        if (!outFile.is_open()) {
-            std::cerr << "Failed to open file for writing: " << fileName << std::endl;
-            continue;
-        }
+        std::string relativePath(relativePathBuffer.data(), relativePathSize);
+        std::cout << "Receiving file: " << relativePath << std::endl;
 
         uint64_t fileSize = 0;
         bytesReceived = recv(clientSocket, &fileSize, sizeof(fileSize), 0);
@@ -124,9 +121,17 @@ void ServerFile::receiveFiles(const std::string& outputDirectory) {
             break;
         }
 
+        std::string fullFilePath = outputDirectory + "/" + relativePath;
+        create_directories_from_path(fullFilePath);
+
+        std::ofstream outFile(fullFilePath, std::ios::binary);
+        if (!outFile.is_open()) {
+            std::cerr << "Failed to open file for writing: " << relativePath << std::endl;
+            continue;
+        }
+
         uint64_t totalBytesReceived = 0;
         char fileBuffer[1024];
-
         while (totalBytesReceived < fileSize) {
             bytesReceived = recv(clientSocket, fileBuffer, sizeof(fileBuffer), 0);
             if (bytesReceived <= 0) {
@@ -140,12 +145,20 @@ void ServerFile::receiveFiles(const std::string& outputDirectory) {
 
             totalBytesReceived += bytesReceived;
             outFile.write(fileBuffer, bytesReceived);
-            std::cout << "Received " << bytesReceived << " bytes of file data" << std::endl;
         }
 
         outFile.close();
-        std::cout << "File received and saved as: " << outputDirectory + "/" + fileName << std::endl;
+        std::cout << "File received and saved as: " << fullFilePath << std::endl;
 
-        sendAcknowledgment("File " + fileName + " received successfully");
+        sendAcknowledgment("File " + relativePath + " received successfully");
     }
+    shutdownConnection();
+}
+
+
+
+void ServerFile::shutdownConnection() {
+    shutdown(clientSocket, SHUT_RDWR);
+    close(clientSocket);
+    std::cout << "Connection closed gracefully" << std::endl;
 }
